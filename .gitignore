@@ -1,0 +1,17 @@
+# Python bytecode and numba's compiled-code cache
+__pycache__/
+*.py[cod]
+*.nbi
+*.nbc
+
+# Virtual environments
+.venv/
+venv/
+
+# Editor / OS clutter
+.vscode/
+.idea/
+.DS_Store
+
+# Images saved from the app
+*.png
