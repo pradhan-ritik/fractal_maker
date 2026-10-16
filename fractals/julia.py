@@ -15,11 +15,24 @@ shape. If c is outside, the Julia set breaks into "dust". Try Shift+clicking
 on the Mandelbrot view to see the Julia set for that exact point.
 """
 
+import numpy as np
+from numba import njit, prange
 from PIL import Image
 
 from colors import colorize
 from .base import Fractal, Param, complex_grid
-from .mandelbrot import julia_counts
+from .mandelbrot import escape_count
+
+
+@njit(parallel=True, cache=True, nogil=True)
+def julia_counts(z, c, max_iter):
+    """Escape counts for a grid of starting z values and one fixed c."""
+    height, width = z.shape
+    counts = np.empty((height, width))
+    for row in prange(height):
+        for col in range(width):
+            counts[row, col] = escape_count(z[row, col], c, max_iter)
+    return counts
 
 
 class Julia(Fractal):

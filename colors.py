@@ -10,12 +10,7 @@ matters because deep zooms can go through the palette many times.
 import math
 
 import numpy as np
-
-try:
-    from numba import njit, prange
-    ACCELERATED = True
-except ImportError:
-    ACCELERATED = False
+from numba import njit, prange
 
 PALETTES = {
     "Classic": [(0, 7, 100), (32, 107, 203), (237, 255, 255),
@@ -28,8 +23,6 @@ PALETTES = {
                     (0, 255, 255), (0, 0, 255), (255, 0, 255), (255, 0, 0)],
     "Grayscale": [(0, 0, 0), (255, 255, 255), (0, 0, 0)],
 }
-
-INSIDE_COLOR = (0, 0, 0)  # points inside the set are drawn black
 
 LUT_SIZE = 256
 # How quickly we move through the palette. Bigger = more colour bands.
@@ -44,57 +37,42 @@ def build_lut(stops):
     lut = np.empty((LUT_SIZE, 3))
     for channel in range(3):  # red, green, blue
         lut[:, channel] = np.interp(positions, stop_positions, stops[:, channel])
-    return lut.astype(np.uint8)
+    return lut
 
 
-_LUTS = {name: build_lut(stops) for name, stops in PALETTES.items()}
+LUTS = {name: build_lut(stops) for name, stops in PALETTES.items()}
 
 
 def colorize(counts, palette_name):
     """Turn a 2D array of escape counts into a (height, width, 3) RGB image.
 
-    counts -- floats from escape_time(); NaN means "inside the set"
+    counts -- floats from the fractal; NaN means "inside the set"
     """
-    lut = _LUTS[palette_name]
-    if ACCELERATED:
-        return _colorize_fast(counts, lut.astype(np.float64))
+    return _colorize(counts, LUTS[palette_name])
 
-    inside = np.isnan(counts)
-    values = np.where(inside, 0.0, np.maximum(counts, 0.0))
 
-    # Square root squashes large counts, so colours still change at deep
-    # zooms where counts can be in the thousands.
-    position = (np.sqrt(values) * COLOR_DENSITY) % LUT_SIZE
+# numba compiles this loop to fast machine code (see fractals/mandelbrot.py).
+@njit(parallel=True, cache=True, nogil=True)
+def _colorize(counts, lut):
+    height, width = counts.shape
+    rgb = np.zeros((height, width, 3), dtype=np.uint8)  # starts all black
+    for row in prange(height):
+        for col in range(width):
+            value = counts[row, col]
+            if math.isnan(value):
+                continue  # inside the set: leave it black
 
-    # `position` usually falls between two table entries (e.g. 41.3), so
-    # blend the two neighbours (70% of entry 41, 30% of entry 42). This
-    # avoids visible stripes where the colours change.
-    low = position.astype(np.int64)
-    high = (low + 1) % LUT_SIZE
-    frac = (position - low)[..., np.newaxis]
-    rgb = (lut[low] * (1 - frac) + lut[high] * frac).astype(np.uint8)
+            # Square root squashes large counts, so colours still change at
+            # deep zooms where counts can be in the thousands.
+            position = (math.sqrt(max(value, 0.0)) * COLOR_DENSITY) % LUT_SIZE
 
-    rgb[inside] = INSIDE_COLOR
+            # `position` usually falls between two table entries (e.g. 41.3),
+            # so blend the two neighbours (70% of entry 41, 30% of entry 42).
+            # This avoids visible stripes where the colours change.
+            low = int(position)
+            high = (low + 1) % LUT_SIZE
+            frac = position - low
+            for channel in range(3):
+                rgb[row, col, channel] = int(
+                    lut[low, channel] * (1 - frac) + lut[high, channel] * frac)
     return rgb
-
-
-if ACCELERATED:
-
-    # The same steps as the numpy code in colorize(), done one pixel at a
-    # time with numba (see fractals/mandelbrot.py). Much faster on big images.
-    @njit(parallel=True, cache=True, nogil=True)
-    def _colorize_fast(counts, lut):
-        height, width = counts.shape
-        rgb = np.zeros((height, width, 3), dtype=np.uint8)  # zeros = black inside
-        for row in prange(height):
-            for col in range(width):
-                value = counts[row, col]
-                if math.isnan(value):
-                    continue
-                position = (math.sqrt(max(value, 0.0)) * COLOR_DENSITY) % LUT_SIZE
-                low = int(position)
-                high = (low + 1) % LUT_SIZE
-                frac = position - low
-                for ch in range(3):
-                    rgb[row, col, ch] = int(lut[low, ch] * (1 - frac) + lut[high, ch] * frac)
-        return rgb

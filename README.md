@@ -14,8 +14,8 @@ Needs Python 3 with tkinter, plus:
 pip install --user -r requirements.txt   # numpy, pillow, numba
 ```
 
-numba is optional but makes rendering 20-50x faster. Without it the app still
-works, just slowly (the status bar shows "numba: off").
+numba compiles the per-pixel maths to machine code, which makes rendering
+20-50x faster than plain Python.
 
 ## Controls
 
@@ -35,19 +35,17 @@ ordinary 64-bit floating-point numbers, not a bug.
 
 Three tricks keep the app smooth, even full-screen:
 
-1. **numba** (`fractals/mandelbrot.py`, `colors.py`). The per-pixel loop is
-   compiled to machine code and its rows are shared across all CPU cores.
-   On first launch the compiling takes about a second; after that it's
-   cached in `__pycache__`.
-2. **A background thread** (`app.py`, `_render_worker`). Rendering happens
+1. **numba** (`fractals/mandelbrot.py`, `colors.py`). The per-pixel loops are
+   compiled to machine code and their rows are shared across all CPU cores.
+   On first launch the compiling takes a few seconds; after that it's cached
+   in `__pycache__`.
+2. **A background thread** (`app.py`, `render_worker`). Rendering happens
    off the GUI thread, so the window never freezes. Every request gets a
    *generation* number, and finished pictures from outdated requests are
    thrown away.
-3. **Instant previews** (`app.py`, `_show_zoom_preview`). When you zoom, the
-   picture already on screen is stretched to the new view at once. It's
-   blurry for a moment, then the sharp version replaces it. If renders are
-   slow (deep zooms with many iterations), a quick ¼-resolution version is
-   shown first.
+3. **Instant zoom previews** (`app.py`, `show_zoom_preview`). When you zoom,
+   the last picture is stretched to the new view at once. It's blurry for a
+   moment, then the sharp version replaces it.
 
 ## How it's organised
 
@@ -57,7 +55,7 @@ app.py               the window, sliders and mouse handling
 colors.py            colour palettes
 fractals/
   base.py            Fractal base class + Param (one slider) + helpers
-  mandelbrot.py      Mandelbrot set + the shared escape_time() loop
+  mandelbrot.py      Mandelbrot set + the shared escape_count() loop
   julia.py           Julia sets
   __init__.py        REGISTRY: the list of fractals in the dropdown
 ```

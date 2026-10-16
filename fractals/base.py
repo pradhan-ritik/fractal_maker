@@ -14,17 +14,14 @@ import numpy as np
 
 @dataclass
 class Param:
-    """One adjustable setting. The sidebar turns each Param into a slider."""
+    """One adjustable setting. The sidebar turns each Param into a slider.
+    If `default` is a whole number (e.g. 300, not 300.0), the slider gives
+    whole numbers."""
     label: str
     default: float
     min: float
     max: float
     step: float = 1
-
-    @property
-    def is_int(self):
-        # If the default is a whole number type, the slider gives whole numbers.
-        return isinstance(self.default, int)
 
 
 class Fractal:
@@ -63,7 +60,8 @@ class Fractal:
 # ---------------------------------------------------------------------------
 
 def pixel_to_point(px, py, width, height, view):
-    """Convert one pixel position to an (x, y) point on the maths plane."""
+    """Convert a pixel position to an (x, y) point on the maths plane.
+    Works on single numbers and on whole numpy arrays of pixels."""
     cx, cy, w = view
     h = w * height / width
     x = cx - w / 2 + (px / width) * w
@@ -76,8 +74,7 @@ def complex_grid(width, height, view):
 
     Each pixel becomes the complex number x + y*i at its spot on the plane.
     """
-    cx, cy, w = view
-    h = w * height / width
-    xs = np.linspace(cx - w / 2, cx + w / 2, width)
-    ys = np.linspace(cy + h / 2, cy - h / 2, height)  # top row = largest y
-    return xs[np.newaxis, :] + 1j * ys[:, np.newaxis]
+    columns = np.arange(width)[np.newaxis, :]  # a row of x pixel positions
+    rows = np.arange(height)[:, np.newaxis]    # a column of y pixel positions
+    x, y = pixel_to_point(columns, rows, width, height, view)
+    return x + 1j * y
