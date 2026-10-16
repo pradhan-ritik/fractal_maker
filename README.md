@@ -2,9 +2,9 @@
 
 Explore the Mandelbrot and Julia sets with Python + tkinter.
 
-📖 **New to fractals or to this code? Read [How it works](docs/HOW_IT_WORKS.md):**
-the maths, the architecture, a step-by-step trace of a click, and a tutorial
-for adding your own fractal.
+📖 **Curious about the maths? Read [The Maths Behind Fractal Maker](docs/HOW_IT_WORKS.md):**
+complex numbers, why the escape radius is 2, smooth colouring, Julia sets,
+the anatomy of the Mandelbrot set (and where π shows up), all from scratch.
 
 ## Run it
 

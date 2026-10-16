@@ -50,7 +50,7 @@ class Julia(Fractal):
         "Siegel disk": {"c_real": -0.391, "c_imag": -0.587},
         "Dragon": {"c_real": 0.36, "c_imag": 0.1},
         "Lightning": {"c_real": -0.7269, "c_imag": 0.1889},
-        "Dust (disconnected)": {"c_real": 0.3, "c_imag": 0.5},
+        "Dust (disconnected)": {"c_real": 0.35, "c_imag": 0.4},
     }
 
     def default_view(self):
