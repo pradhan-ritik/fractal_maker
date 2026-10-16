@@ -2,6 +2,10 @@
 
 Explore the Mandelbrot and Julia sets with Python + tkinter.
 
+📖 **New to fractals or to this code? Read [How it works](docs/HOW_IT_WORKS.md):**
+the maths, the architecture, a step-by-step trace of a click, and a tutorial
+for adding your own fractal.
+
 ## Run it
 
 ```bash
